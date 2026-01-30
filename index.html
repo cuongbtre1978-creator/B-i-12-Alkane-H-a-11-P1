@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài Kiểm Tra Alkane</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }
+        
+        /* Giao diện tiêu đề */
+        .header-container { text-align: center; margin-bottom: 20px; }
+        .main-title {
+            display: inline-block;
+            background-color: #28a745; /* Màu xanh lá */
+            color: #ffeb3b; /* Chữ vàng */
+            padding: 15px 30px;
+            border: 4px solid #1e7e34;
+            border-radius: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            box-shadow: 0 8px 0 #155724, 0 15px 20px rgba(0,0,0,0.3); /* Hiệu ứng 3D */
+            transform: perspective(1px) translateZ(0);
+            margin-bottom: 10px;
+        }
+        .sub-title { color: #007bff; font-size: 20px; font-weight: bold; }
+
+        /* Khung điều khiển */
+        .controls { 
+            background: #fff; padding: 15px; border-radius: 8px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px;
+            display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center;
+        }
+        input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .timer { font-weight: bold; color: red; font-size: 18px; min-width: 100px; }
+        .score-box { font-weight: bold; background: #eee; padding: 8px 15px; border-radius: 4px; border: 1px solid #aaa; }
+
+        /* Không gian câu hỏi */
+        #quiz-container {
+            background: #fff; padding: 20px; border-radius: 8px;
+            max-height: 500px; overflow-y: auto; border: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .question-item { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .question-text { font-weight: bold; margin-bottom: 10px; }
+        .options label { display: block; cursor: pointer; margin: 5px 0; }
+        .short-answer { width: 100px; padding: 5px; }
+
+        /* Nút bấm cuối trang */
+        .footer-buttons { text-align: center; display: flex; justify-content: center; gap: 20px; }
+        button { 
+            padding: 10px 20px; font-size: 16px; cursor: pointer; border-radius: 5px; border: none;
+            transition: 0.3s; color: white;
+        }
+        .btn-start { background-color: #28a745; }
+        .btn-submit { background-color: #007bff; }
+        .btn-reset { background-color: #6c757d; }
+        .btn-show { background-color: #ffc107; color: black; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        .correct-ans { color: #28a745; font-weight: bold; margin-top: 5px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <div class="main-title">Bài Kiểm Tra Tương Tác - Alkane</div>
+        <div class="sub-title">Thầy Lê Nguyễn Cường</div>
+    </div>
+
+    <div class="controls">
+        <input type="text" id="studentName" placeholder="Họ và tên">
+        <input type="text" id="studentClass" placeholder="Lớp">
+        <button class="btn-start" onclick="startQuiz()">Làm bài</button>
+        <div class="score-box">Điểm tổng: <span id="displayScore">0</span></div>
+        <div class="timer">Thời gian: <span id="timeLeft">450</span>s</div>
+    </div>
+
+    <div id="quiz-container">
+        <p style="text-align:center; color: #888;">Vui lòng nhập thông tin và nhấn "Làm bài" để bắt đầu.</p>
+    </div>
+
+    <div class="footer-buttons">
+        <button id="submitBtn" class="btn-submit" onclick="submitQuiz()" disabled>Nộp bài</button>
+        <button id="resetBtn" class="btn-reset" onclick="resetQuiz()" disabled>Làm lại bài</button>
+        <button id="showBtn" class="btn-show" onclick="showAnswers()" disabled>Hiện đáp án</button>
+    </div>
+
+    <script>
+        // --- CẤU HÌNH ---
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwJf2IRNaaNi6rvSK3CnaJ3GuZh-E3auaLbZXTlndaqcGizP4ECL-GnsXIydEyPqcf6ew/exec"; 
+        
+        const questions = [
+            { id: 1, type: 'mcq', q: 'Công thức phân tử C5H12 có mấy công thức cấu tạo alkane?', a: 'D', options: {A:'4', B:'2', C:'1', D:'3'} },
+            { id: 2, type: 'mcq', q: 'Một alkane X có số nguyên tử H là 14. Vậy trong phân tử alkane X có mấy nguyên tử C?', a: 'C', options: {A:'4', B:'5', C:'6', D:'7'} },
+            { id: 3, type: 'mcq', q: 'Alkane X có CTCT: (CH3)2CH-CH2CH(CH3)-CH2-CH2-CH3. Tên thay thế của X là:', a: 'B', options: {A:'1,1,3-trimethylheptane', B:'2,4-dimethylheptane', C:'2-methyl-4-propylpentane', D:'4,6-đimethylheptane'} },
+            { id: 4, type: 'mcq', q: 'Cho CTCT của alkane Y: (CH3)3C-CH2-CH(CH3)2. Tên thay thế của Y là:', a: 'A', options: {A:'2,2,4-trimethyl pentane', B:'2,4-trimethyl pentane', C:'2,4,4-trimethyl pentane', D:'2-dimethyl-4-methyl pentane'} },
+            { id: 5, type: 'mcq', q: 'Cho alkane Z có tên là 2,2,4-trimethylpentane. CTPT của Z là:', a: 'C', options: {A:'C11H24', B:'C9H20', C:'C8H18', D:'C10H22'} },
+            { id: 6, type: 'tf', q: 'Phát biểu: "Trong phân tử alkane chỉ chứa các liên kết σ bền vững."', a: 'Đúng' },
+            { id: 7, type: 'tf', q: 'Phát biểu: "Các phân tử alkane hầu như không phân cực."', a: 'Đúng' },
+            { id: 8, type: 'tf', q: 'Phát biểu: "Ở điều kiện thường các alkane tương đối trơ về mặt hoá học."', a: 'Đúng' },
+            { id: 9, type: 'tf', q: 'Phát biểu: "Trong phân tử methane, bốn liên kết C–H hướng về bốn đỉnh của một hình vuông."', a: 'Sai' },
+            { id: 10, type: 'sa', q: 'Alkane X có tổng số liên kết đơn là 19. Số đồng phân cấu tạo của X là:', a: '5' },
+            { id: 11, type: 'sa', q: 'Alkane X có tổng số liên kết đơn là 16. Số đồng phân cấu tạo của X là:', a: '3' },
+            { id: 12, type: 'sa', q: 'Một alkane X có peak ion phân tử ứng với giá trị m/z = 86. X có bao nhiêu đồng phân cấu tạo?', a: '5' }
+        ];
+
+        let timer;
+        let timeLeft = 450;
+        let isSubmitted = false;
+
+        function startQuiz() {
+            const name = document.getElementById('studentName').value.trim();
+            const lop = document.getElementById('studentClass').value.trim();
+
+            if (!name || !lop) {
+                alert("Vui lòng điền đủ Họ tên và Lớp để làm bài!");
+                return;
+            }
+
+            renderQuestions();
+            document.getElementById('submitBtn').disabled = false;
+            document.querySelector('.btn-start').disabled = true;
+            
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timeLeft').innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    submitQuiz();
+                }
+            }, 1000);
+        }
+
+        function renderQuestions() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = '';
+            questions.forEach((q, index) => {
+                let html = `<div class="question-item" id="q-div-${index}">
+                    <div class="question-text">Câu ${index + 1}. ${q.q}</div>
+                    <div class="options">`;
+                
+                if (q.type === 'mcq') {
+                    for (let opt in q.options) {
+                        html += `<label><input type="radio" name="q${index}" value="${opt}"> ${opt}. ${q.options[opt]}</label>`;
+                    }
+                } else if (q.type === 'tf') {
+                    html += `<label><input type="radio" name="q${index}" value="Đúng"> Đúng</label>
+                             <label><input type="radio" name="q${index}" value="Sai"> Sai</label>`;
+                } else {
+                    html += `<input type="text" class="short-answer" id="sa-${index}" placeholder="Nhập số...">`;
+                }
+
+                html += `</div><div class="correct-ans" id="ans-${index}">Đáp án đúng: ${q.a}</div></div>`;
+                container.innerHTML += html;
+            });
+        }
+
+        async function submitQuiz() {
+            if (isSubmitted) return;
+            isSubmitted = true;
+            clearInterval(timer);
+
+            let correctCount = 0;
+            questions.forEach((q, index) => {
+                let userAns = "";
+                if (q.type === 'mcq' || q.type === 'tf') {
+                    const selected = document.querySelector(`input[name="q${index}"]:checked`);
+                    userAns = selected ? selected.value : "";
+                } else {
+                    userAns = document.getElementById(`sa-${index}`).value.trim();
+                }
+
+                if (userAns === q.a) correctCount++;
+            });
+
+            const totalCount = questions.length;
+            const score = ((correctCount * 10) / totalCount).toFixed(1);
+            
+            document.getElementById('displayScore').innerText = score;
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('resetBtn').disabled = false;
+            document.getElementById('showBtn').disabled = false;
+
+            // Gửi dữ liệu lên Google Sheet
+            const data = {
+                hoTen: document.getElementById('studentName').value,
+                lop: document.getElementById('studentClass').value,
+                diem: score,
+                soDung: correctCount,
+                tongSoCau: totalCount
+            };
+
+            try {
+                await fetch(WEB_APP_URL, {
+                    method: "POST",
+                    mode: "no-cors", // Quan trọng khi dùng Apps Script
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
+                alert("Nộp bài thành công và đã lưu điểm!");
+            } catch (error) {
+                console.error("Lỗi khi gửi dữ liệu:", error);
+                alert("Có lỗi khi lưu điểm vào Google Sheet.");
+            }
+        }
+
+        function resetQuiz() {
+            if (confirm("Bạn muốn làm lại từ đầu?")) {
+                isSubmitted = false;
+                timeLeft = 450;
+                document.getElementById('displayScore').innerText = "0";
+                document.getElementById('timeLeft').innerText = "450";
+                document.getElementById('resetBtn').disabled = true;
+                document.getElementById('showBtn').disabled = true;
+                document.querySelector('.btn-start').disabled = false;
+                document.getElementById('quiz-container').innerHTML = '<p style="text-align:center; color: #888;">Vui lòng nhập thông tin và nhấn "Làm bài" để bắt đầu.</p>';
+            }
+        }
+
+        function showAnswers() {
+            questions.forEach((_, index) => {
+                document.getElementById(`ans-${index}`).style.display = 'block';
+            });
+            document.getElementById('resetBtn').disabled = true; // Không cho làm lại khi xem đáp án
+            alert("Đã hiện đáp án. Bạn không thể làm lại bài này nữa.");
+        }
+    </script>
+</body>
+</html>
